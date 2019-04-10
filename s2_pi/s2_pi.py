@@ -112,6 +112,31 @@ class S2Pi(WebSocket):
                 self.pi.wave_delete(wid)
         elif client_cmd == 'ready':
             pass
+        elif client_cmd == 'sonar_read':
+            trig = int(payload['trig'])
+            echo = int(payload['echo'])
+            name = payload['name']
+            self.pi.set_mode(trig, pigpio.OUTPUT)
+            self.pi.set_mode(echo, pigpio.INPUT)
+            #set 1us plus
+            self.pi.write(trig,1);
+            time.sleep(0.000001);
+            self.pi.write(trig,0);
+
+            #waite echo high level
+            while self.pi.read(echo) == 0:
+                pass
+
+            #start
+            plus_start = time.time();
+            while self.pi.read(echo) == 1:
+                pass
+            plus_end = time.time();
+            sdistance = (plus_end - plus_start) * 17150;# 343*100/2
+
+            msg = {'report':'sonar_distance','name':name,'distance':sdistance}
+            print('sonar_read',msg)
+            self.sendMessage(json.dumps(msg))
         else:
             print("Unknown command received", client_cmd)
 
